@@ -32,6 +32,7 @@ dependencies:
 - process
 - binary
 - configurator
+- clock
 
 library:
   source-dirs: src

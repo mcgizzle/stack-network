@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cd567648fed9ff7ba67c587fd78dd76154f81ab0fbd334ee17ecb1ca8799a237
+-- hash: 435ded36e28b4f2187e31d95281d7a4f5b70471dce3e680f00ce0211694e266b
 
 name:           stack-network
 version:        0.1.0.0
@@ -24,6 +24,7 @@ library
     , base >=4.7 && <5
     , binary
     , bytestring
+    , clock
     , configurator
     , directory
     , dirstream
@@ -60,6 +61,7 @@ executable stack-network
     , base >=4.7 && <5
     , binary
     , bytestring
+    , clock
     , configurator
     , directory
     , dirstream
@@ -96,6 +98,7 @@ test-suite distributed-test
     , base >=4.7 && <5
     , binary
     , bytestring
+    , clock
     , configurator
     , directory
     , dirstream

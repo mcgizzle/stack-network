@@ -49,7 +49,7 @@ data Response
 
 instance Binary Response
 
-type FileInfo = (Text, ByteString)
+type FileInfo = (ByteString, ByteString)
 
 data Transfer
   = TransferInProg FileInfo

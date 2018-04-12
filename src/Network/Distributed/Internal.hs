@@ -44,7 +44,7 @@ runRequestNode NetworkConfig {..} = do
     initializeBackend hostNetworkConfig portNetworkConfig PN.initRemoteTable
   node <- newLocalNode backend
   PN.runProcess node (runRequestNode' backend)
-  runStackBuild pathNetworkConfig
+  runStackBuildT
 
 runRequestNode' :: Backend -> Process ()
 runRequestNode' backend = do
@@ -65,6 +65,7 @@ runRequestNode' backend = do
       log "Working..."
       receiveF rPort
       logSucc "Transmission complete. All files received. Ready to build."
+      mapM_ (flip send Terminate) pids
 
 joinNetwork :: NetworkConfig -> IO ()
 joinNetwork nc@NetworkConfig {..} = do
