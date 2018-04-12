@@ -1,0 +1,16 @@
+slave:
+  image: stack-net:latest
+  command: bash -c "cd testbuild && sed -i -e 's|&port|6000|' network.config && sed -i -e 's|mwc-random|array|' testbuild1.cabal && stack-network join"
+  tty: true
+  stdin_open: true
+  net: "host"
+  ports: 
+    - "6000:6000"
+master:
+  image: stack-net:latest
+  command: bash -c "cd testbuild && sed -i -e 's|&port|6001|' network.config && sed -i -e 's|mwc-random|array|' testbuild1.cabal && stack-network build"
+  tty: true
+  stdin_open: true
+  net: "host"
+  ports:
+    - "6001:6001"
