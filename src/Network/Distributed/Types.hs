@@ -13,47 +13,51 @@ import           Filesystem.Path.CurrentOS   (decode)
 import           GHC.Generics                (Generic)
 
 data NetworkConfig = NetworkConfig
-    { hostNetworkConfig :: String
-    , portNetworkConfig :: String
-    , pathNetworkConfig :: String
-    }
+  { hostNetworkConfig :: String
+  , portNetworkConfig :: String
+  , pathNetworkConfig :: String
+  }
 
 instance Show NetworkConfig where
-    show NetworkConfig {..} =
-        "//" ++ hostNetworkConfig ++ ":" ++ portNetworkConfig
+  show NetworkConfig {..} =
+    "//" ++ hostNetworkConfig ++ ":" ++ portNetworkConfig
 
 type Node = ProcessId
 
 type Network = [Node]
 
-type ProcessDeps = (Deps, Node)
-
-type Deps = [String]
+data Message
+  = Request
+  | Response
 
 data Request
-    = Ping ProcessId
-    | Transfer (SendPort TransferData)
-    | Terminate
-    deriving (Generic, Typeable)
+  = Ping ProcessId
+  | TransferReq (SendPort Transfer)
+  | Terminate
+  deriving (Generic, Typeable)
 
 instance Binary Request
 
 data Response
-    = PD ProcessDeps
-    | TransferData FileInfo
-    deriving (Generic, Typeable)
+  = PD ProcessDeps
+  | Transfer
+  deriving (Generic, Typeable)
 
 instance Binary Response
 
-type FileInfo = (ByteString, ByteString)
+type Deps = [String]
 
-data TransferData
-    = TransferInProg FileInfo
-    | TransferDone
-    deriving (Generic, Typeable)
+type ProcessDeps = (Deps, Node)
 
-instance Show TransferData where
-    show (TransferInProg (s, _)) = show $ decode s
-    show _                       = "Transfer Complete"
+type FileInfo = (Text, ByteString)
 
-instance Binary TransferData
+data Transfer
+  = TransferInProg FileInfo
+  | TransferDone
+  deriving (Generic, Typeable)
+
+instance Show Transfer where
+  show (TransferInProg (s, _)) = show $ decode s
+  show _                       = "Transfer Complete"
+
+instance Binary Transfer
