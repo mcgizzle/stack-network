@@ -38,16 +38,16 @@ data Request
 
 instance Binary Request
 
+type Deps = [String]
+
+type ProcessDeps = (Deps, Node)
+
 data Response
   = PD ProcessDeps
   | Transfer
   deriving (Generic, Typeable)
 
 instance Binary Response
-
-type Deps = [String]
-
-type ProcessDeps = (Deps, Node)
 
 type FileInfo = (Text, ByteString)
 
