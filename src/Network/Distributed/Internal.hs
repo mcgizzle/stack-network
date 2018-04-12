@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveDataTypeable  #-}
-{-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
@@ -56,8 +54,7 @@ runRequestNode' backend = do
   myDeps <- listDeps
   log "Finding most compatable node..."
   case getBestPid pDeps myDeps (Nothing, 0) of
-    Nothing -> do
-      logWarn "No Nodes share dependencies, aborting."
+    Nothing -> logWarn "No Nodes share dependencies, aborting."
     Just n -> do
       log $ "Node: " ++ show n ++ " Is the best match."
       (sPort, rPort) <- newChan
@@ -99,8 +96,7 @@ joinNetwork' = do
 
 -- HELPER FUNCTIONS ===============================================================
 findPids :: Backend -> Process [ProcessId]
-findPids backend = do
-  loop
+findPids backend = loop
   where
     loop = do
       nids <- liftIO $ findPeers backend 1000000
@@ -139,13 +135,13 @@ receiveF rPort = work =<< receiveChan rPort
 
 -- SEND FILES =====================================================================
 pipeFiles :: (MonadMask m, MonadIO m) => (Transfer -> m ()) -> m ()
-pipeFiles action = do
+pipeFiles action =
   runSafeT $
-    runEffect $
-    for
-      (producers >-> P.filterM (liftIO . isFile) >-> P.chain (log . show) >->
-       P.mapM packageFile)
-      (lift . lift . action)
+  runEffect $
+  for
+    (producers >-> P.filterM (liftIO . isFile) >-> P.chain (log . show) >->
+     P.mapM packageFile)
+    (lift . lift . action)
 
 producers :: MonadSafe m => Pipes.Proxy x' x () FilePath m ()
 producers =

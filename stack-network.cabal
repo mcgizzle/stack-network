@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 435ded36e28b4f2187e31d95281d7a4f5b70471dce3e680f00ce0211694e266b
+-- hash: 01cdab05bca9794e50168d559fa12ded20e9e2ac510ff41927ab2b0a66c938c4
 
 name:           stack-network
 version:        0.1.0.0
@@ -102,7 +102,6 @@ test-suite distributed-test
     , configurator
     , directory
     , dirstream
-    , distributed
     , distributed-process
     , distributed-process-simplelocalnet
     , exceptions
@@ -111,6 +110,7 @@ test-suite distributed-test
     , pipes
     , pipes-safe
     , process
+    , stack-network
     , system-fileio
     , system-filepath
     , temporary

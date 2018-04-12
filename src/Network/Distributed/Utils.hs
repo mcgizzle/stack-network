@@ -44,15 +44,14 @@ listDeps :: MonadIO m => m [String]
 listDeps =
   liftIO $ do
     path <- getCurrentDirectory
-    (_, Just hStdout, _, p) <-
-      System.Process.createProcess
-        (proc "stack" ["list-dependencies", "--stack-root", path ++ "/root"])
-        {std_out = CreatePipe, std_err = Inherit}
-    hSetBuffering hStdout NoBuffering
-    exit_code <- waitForProcess p
-    case exit_code of
-      ExitSuccess   -> lines <$> hGetContents hStdout
-      ExitFailure _ -> logWarn "Error calculating dependencies" *> pure []
+    withCreateProcess
+      (proc "stack" ["list-dependencies", "--stack-root", path ++ "/root"])
+      {std_out = CreatePipe, std_err = Inherit} $ \_ (Just hStdout) _ p -> do
+      hSetBuffering hStdout NoBuffering
+      exit_code <- waitForProcess p
+      case exit_code of
+        ExitSuccess   -> lines <$> hGetContents hStdout
+        ExitFailure _ -> logWarn "Error calculating dependencies" *> pure []
 
 runStackBuildT :: IO ()
 runStackBuildT = timeIt runStackBuild

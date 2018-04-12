@@ -57,6 +57,8 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - distributed
+    - stack-network
+    - process
+    - directory
     - hspec
 
