@@ -40,7 +40,7 @@ instance Binary Request
 
 type Deps = [String]
 
-type ProcessDeps = (Deps, Node)
+type ProcessDeps = (Deps, ProcessId)
 
 data Response
   = PD ProcessDeps
