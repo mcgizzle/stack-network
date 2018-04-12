@@ -56,8 +56,8 @@ data Transfer
   | TransferDone
   deriving (Generic, Typeable)
 
+instance Binary Transfer
+
 instance Show Transfer where
   show (TransferInProg (s, _)) = show $ decode s
   show _                       = "Transfer Complete"
-
-instance Binary Transfer
