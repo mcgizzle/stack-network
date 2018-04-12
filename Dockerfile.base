@@ -16,6 +16,6 @@ RUN cd testbuild && sed -i -e "s|&path|$PWD|" network.config
 
 RUN curl -sSL https://get.haskellstack.org/ | sh
 
-RUN cd testbuild && stack setup --stack-root $PWD/root
+RUN cd testbuild && stack setup --stack-root $PWD/root && stack list-dependencies --stack-root $PWD/root
 
 ENV PATH="/:${PATH}"

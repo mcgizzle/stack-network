@@ -1,16 +1,16 @@
-stack-sit:
+slave:
   image: stack-net:latest
-  command: bash -c "cd testbuild && sed -i -e 's/&port/5000/' network.config && stack build --stack-root $PWD/root && stack-network join"
+  command: bash -c "cd testbuild && sed -i -e 's|&port|6000|' network.config && stack-network join"
   tty: true
   stdin_open: true
   net: "host"
   ports: 
-    - "5000:5000"
-stack-build:
+    - "6000:6000"
+master:
   image: stack-net:latest
-  command: bash -c "cd testbuild && sed -i -e 's/&port/5001/' network.config && stack-network build"
+  command: bash -c "cd testbuild && sed -i -e 's|&port|6001|' network.config && stack-network build"
   tty: true
   stdin_open: true
   net: "host"
   ports:
-    - "5001:5001"
+    - "6001:6001"
