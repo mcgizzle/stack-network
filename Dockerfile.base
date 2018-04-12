@@ -1,0 +1,21 @@
+FROM ubuntu:16.04
+
+RUN apt-get update && apt-get install -y \
+  ca-certificates \
+  libgmp-dev \
+  build-essential \
+  libnss3 \ 
+  libnss-lwres \
+  libnss-mdns \
+  git-all \
+  curl
+
+COPY testbuild1 /testbuild
+
+RUN cd testbuild && sed -i -e "s|&path|$PWD|" network.config
+
+RUN curl -sSL https://get.haskellstack.org/ | sh
+
+RUN cd testbuild && stack setup --stack-root $PWD/root
+
+ENV PATH="/:${PATH}"

@@ -1,0 +1,61 @@
+name:                stack-network
+version:             0.1.0.0
+license:             BSD3
+author:              "Sean McGroarty"
+maintainer:          "mcgroas@tcd.ie"
+copyright:           "2018 Sean McGroarty"
+
+ghc-options:
+- -Wall
+- -fwarn-tabs
+- -fwarn-incomplete-uni-patterns
+- -fwarn-incomplete-record-updates
+
+dependencies:
+- base >= 4.7 && < 5
+- distributed-process
+- distributed-process-simplelocalnet
+- pipes
+- pipes-safe
+- dirstream
+- system-fileio
+- system-filepath
+- ansi-terminal
+- Cabal
+- bytestring
+- temporary
+- exceptions
+- filepath
+- directory
+- async
+- text
+- process
+- binary
+- configurator
+
+library:
+  source-dirs: src
+  exposed-modules: 
+  - Network.Distributed
+  - Network.Distributed.Types
+  - Network.Distributed.Utils
+  - Network.Distributed.Internal
+
+executables:
+  stack-network:
+    source-dirs: src
+    main: Main.hs
+    dependencies: 
+    - stack-network
+tests:
+  distributed-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - distributed
+    - hspec
+

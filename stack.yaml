@@ -1,0 +1,16 @@
+resolver: lts-9.14
+docker:
+  enable: false
+image:
+  container:
+    name: "stack-net"
+    base: "stack-net-base"
+packages:
+- .
+extra-deps:
+- dirstream-1.0.3
+- distributed-process-0.7.3
+- distributed-process-simplelocalnet-0.2.4
+- Cabal-2.0.1.0
+- network-transport-0.5.2
+- network-transport-tcp-0.6.0
