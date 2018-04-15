@@ -46,13 +46,12 @@ runRequestNode NetworkConfig {..} = do
 
 runRequestNode' :: Backend -> Process ()
 runRequestNode' backend = do
-  me <- getSelfPid
   log "Searching the Network..."
   pids <- findPids backend
   logSucc $ "Found Nodes: " ++ show pids
-  pDeps <- gatherDeps me pids
-  myDeps <- listDeps
+  pDeps <- gatherDeps pids
   log "Finding most compatable node..."
+  myDeps <- listDeps
   case getBestPid pDeps myDeps (Nothing, 0) of
     Nothing -> logWarn "No Nodes share dependencies, aborting."
     Just n -> do
@@ -92,7 +91,7 @@ joinNetwork' = do
       pipeFiles (sendChan sPort) *> sendChan sPort TransferDone
       logSucc "Transmission complete"
       loop me
-    receiveReq _ Terminate = log "Received a request to terminate\nBye."
+    receiveReq _ Terminate = log "Received a request to terminate. Bye."
 
 -- HELPER FUNCTIONS ===============================================================
 findPids :: Backend -> Process [ProcessId]
@@ -111,8 +110,9 @@ findPids backend = loop
         then loop
         else pure pids
 
-gatherDeps :: ProcessId -> Network -> Process [ProcessDeps]
-gatherDeps me pids = do
+gatherDeps :: Network -> Process [ProcessDeps]
+gatherDeps pids = do
+  me <- getSelfPid
   mapM_ (flip send (Ping me)) pids
   replicateM (length pids) (receiveWait [match $ \(PD pd) -> pure pd])
 

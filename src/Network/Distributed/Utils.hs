@@ -4,6 +4,7 @@ module Network.Distributed.Utils where
 
 import           Control.Monad.IO.Class    (MonadIO, liftIO)
 import qualified Data.Configurator         as C
+import           Data.Functor              (($>))
 import           Data.List                 (intersect)
 import           Network.Distributed.Types
 import           Prelude                   hiding (log)
@@ -44,14 +45,15 @@ listDeps :: MonadIO m => m [String]
 listDeps =
   liftIO $ do
     path <- getCurrentDirectory
-    withCreateProcess
-      (proc "stack" ["list-dependencies", "--stack-root", path ++ "/root"])
-      {std_out = CreatePipe, std_err = Inherit} $ \_ (Just hStdout) _ p -> do
-      hSetBuffering hStdout NoBuffering
-      exit_code <- waitForProcess p
-      case exit_code of
-        ExitSuccess   -> lines <$> hGetContents hStdout
-        ExitFailure _ -> logWarn "Error calculating dependencies" *> pure []
+    (_, Just hStdout, _, p) <-
+      System.Process.createProcess
+        (proc "stack" ["list-dependencies", "--stack-root", path ++ "/root"])
+        {std_out = CreatePipe, std_err = Inherit}
+    hSetBuffering hStdout NoBuffering
+    exit_code <- waitForProcess p
+    case exit_code of
+      ExitSuccess   -> lines <$> hGetContents hStdout
+      ExitFailure _ -> logWarn "Error calculating dependencies" >> pure []
 
 runStackBuildT :: IO ()
 runStackBuildT = timeIt runStackBuild
@@ -71,7 +73,7 @@ getBestPid ((curDeps, curPid):xs) cmpDeps curBest
   | otherwise = recurse curBest
   where
     curLen = length (curDeps `intersect` cmpDeps)
-    recurse n = getBestPid xs cmpDeps n
+    recurse = getBestPid xs cmpDeps
 
 -- Timing
 timeIt :: MonadIO m => m a -> m a
@@ -79,5 +81,5 @@ timeIt action = do
   start <- liftIO $ getTime Monotonic
   res <- action
   end <- liftIO $ getTime Monotonic
-  log $ "Time: " ++ (show $ sec $ diffTimeSpec start end) ++ " seconds"
+  log $ "Time: " ++ show (sec $ diffTimeSpec start end) ++ " seconds"
   pure res
