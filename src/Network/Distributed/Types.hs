@@ -16,7 +16,6 @@ import           GHC.Generics                (Generic)
 data NetworkConfig = NetworkConfig
   { hostNetworkConfig :: String
   , portNetworkConfig :: String
-  , pathNetworkConfig :: String
   }
 
 instance Show NetworkConfig where

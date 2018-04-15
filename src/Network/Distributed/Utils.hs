@@ -4,7 +4,6 @@ module Network.Distributed.Utils where
 
 import           Control.Monad.IO.Class    (MonadIO, liftIO)
 import qualified Data.Configurator         as C
-import           Data.Functor              (($>))
 import           Data.List                 (intersect)
 import           Network.Distributed.Types
 import           Prelude                   hiding (log)
@@ -20,8 +19,7 @@ import           System.Process
 parseNetConfig :: IO NetworkConfig
 parseNetConfig = do
   cfg <- C.load [C.Required "network.config"]
-  NetworkConfig <$> C.require cfg "net.host" <*> C.require cfg "net.port" <*>
-    C.require cfg "net.path"
+  NetworkConfig <$> C.require cfg "net.host" <*> C.require cfg "net.port"
 
 -- LOGGING ==========================================================================
 log :: MonadIO m => String -> m ()
