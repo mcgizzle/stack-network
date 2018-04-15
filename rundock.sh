@@ -5,5 +5,5 @@ echo "Building Stack..."
 stack --docker build &&
 echo "Creating image container..."
 stack --docker image container &&
+echo "Done diddly done :) Running docker-compose..."
 docker-compose up
-echo "Done diddly done :)"
