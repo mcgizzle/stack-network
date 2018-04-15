@@ -79,5 +79,5 @@ timeIt action = do
   start <- liftIO $ getTime Monotonic
   res <- action
   end <- liftIO $ getTime Monotonic
-  log $ "Time: " ++ show (sec $ diffTimeSpec start end) ++ " seconds"
+  logSucc $ "Time: " ++ show (sec $ diffTimeSpec start end) ++ " seconds"
   pure res

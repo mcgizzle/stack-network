@@ -77,9 +77,7 @@ joinNetwork' = do
   register "nodeS" me
   loop me
   where
-    loop me = do
-      receiveWait [match $ \req -> receiveReq me req]
-      loop me
+    loop me = receiveWait [match $ \req -> receiveReq me req]
     receiveReq :: ProcessId -> Request -> Process ()
     receiveReq me (Ping pid) = do
       log "Received a Ping!"
