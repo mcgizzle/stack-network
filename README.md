@@ -37,9 +37,9 @@ Run this from the root of the project
 
 Alternatively you can build the image from the provided [Dockerfile](https://github.com/McGizzle/stack-network/blob/master/Dockerfile.base)
 
-This provides greater control (through editing the file) built will take some time to build. It is recommneded using the provided image
+This can allow greater control (through editing the file) but will take some time to build.
 
-Just run the following script
+Just run the provided script
 
 `sh rundock.sh stack-net-base` 
 
