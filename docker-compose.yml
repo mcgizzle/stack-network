@@ -1,5 +1,5 @@
 slave:
-  image: stack-net:latest
+  image: mcgizzle/stack-network
   command: bash -c "cd testbuild && sed -i -e 's|&port|6000|' network.config && stack-network join"
   tty: true
   stdin_open: true
@@ -7,7 +7,7 @@ slave:
   ports: 
     - "6000:6000"
 master:
-  image: stack-net:latest
+  image: mcgizzle/stack-network
   command: bash -c "cd testbuild && sed -i -e 's|&port|6001|' network.config && stack-network build"
   tty: true
   stdin_open: true

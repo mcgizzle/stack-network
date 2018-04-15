@@ -69,7 +69,7 @@ runStackBuild = do
 getBestPid :: [(Deps, Node)] -> Deps -> (Maybe Node, Int) -> Maybe Node
 getBestPid [] _ best = fst best
 getBestPid ((curDeps, curPid):xs) cmpDeps curBest
-  | curLen > (snd curBest) = recurse (Just curPid, curLen)
+  | curLen > snd curBest = recurse (Just curPid, curLen)
   | otherwise = recurse curBest
   where
     curLen = length (curDeps `intersect` cmpDeps)
