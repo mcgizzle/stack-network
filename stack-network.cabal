@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 01cdab05bca9794e50168d559fa12ded20e9e2ac510ff41927ab2b0a66c938c4
+-- hash: 1ac75a833a0b2edfd0392f580936dda40f03f25612220922f53d254177e23d05
 
 name:           stack-network
 version:        0.1.0.0
@@ -32,6 +32,7 @@ library
     , distributed-process-simplelocalnet
     , exceptions
     , filepath
+    , optparse-applicative
     , pipes
     , pipes-safe
     , process
@@ -69,6 +70,7 @@ executable stack-network
     , distributed-process-simplelocalnet
     , exceptions
     , filepath
+    , optparse-applicative
     , pipes
     , pipes-safe
     , process
@@ -107,15 +109,19 @@ test-suite distributed-test
     , exceptions
     , filepath
     , hspec
+    , optparse-applicative
     , pipes
     , pipes-safe
     , process
+    , raw-strings-qq
     , stack-network
     , system-fileio
     , system-filepath
     , temporary
     , text
+    , yaml
   other-modules:
       DistributedSpec
+      DockerCompose
       Paths_stack_network
   default-language: Haskell2010

@@ -36,18 +36,18 @@ import           Pipes.Safe                                         (MonadMask,
                                                                      runSafeT)
 
 -- DISTRIBUTED NODES ============================================================
-runRequestNode :: NetworkConfig -> IO ()
-runRequestNode NetworkConfig {..} = do
+runRequestNode :: Int -> NetworkConfig -> IO ()
+runRequestNode waitN NetworkConfig {..} = do
   backend <-
     initializeBackend hostNetworkConfig portNetworkConfig PN.initRemoteTable
   node <- newLocalNode backend
-  PN.runProcess node (runRequestNode' backend)
+  PN.runProcess node (runRequestNode' backend waitN)
   runStackBuildT
 
-runRequestNode' :: Backend -> Process ()
-runRequestNode' backend = do
+runRequestNode' :: Backend -> Int -> Process ()
+runRequestNode' backend waitN = do
   log "Searching the Network..."
-  pids <- findPids backend
+  pids <- findPids backend waitN
   logSucc $ "Found Nodes: " ++ show pids
   pDeps <- gatherDeps pids
   log "Finding most compatable node..."
@@ -92,10 +92,10 @@ joinNetwork' = do
     receiveReq _ Terminate = log "Received a request to terminate. Bye."
 
 -- HELPER FUNCTIONS ===============================================================
-findPids :: Backend -> Process [ProcessId]
+findPids :: Backend -> Int -> Process [ProcessId]
 findPids backend = loop
   where
-    loop = do
+    loop nc = do
       nids <- liftIO $ findPeers backend 1000000
       pids <-
         bracket (mapM monitorNode nids) (mapM unmonitor) $ \_ -> do
@@ -104,9 +104,9 @@ findPids backend = loop
             replicateM
               (length nids)
               (receiveWait [match (\(WhereIsReply "nodeS" mPid) -> pure mPid)])
-      if null pids
-        then loop
-        else pure pids
+      if length pids == nc
+        then pure pids
+        else loop nc
 
 gatherDeps :: Network -> Process [ProcessDeps]
 gatherDeps pids = do
