@@ -15,9 +15,7 @@ __Prerequisites__
 
 `stack test`
 
-Be sure to run this from the root of the project.
-
-This will run the [docker-compose.yml](https://github.com/McGizzle/stack-network/blob/master/test/docker-compose.yml) located in the test folder.
+This will run a number of scenarios created from `docker-compose` files embedded into the program using [Quasi-Quotes](https://wiki.haskell.org/Quasiquotation).
 
 ## Building & Running
  
@@ -25,7 +23,7 @@ This will run the [docker-compose.yml](https://github.com/McGizzle/stack-network
 
 Ensure you have a `network.config` file matching the one in the repo. Update the port and host as appropriate.
 
-`stack exec stack-network [join | build]`
+`stack exec stack-network --help` will list the options
 
 To see the program in action it is suggested running it with Docker. 
 
