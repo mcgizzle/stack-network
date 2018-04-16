@@ -2,33 +2,56 @@
 
 module DistributedSpec where
 
+import           DockerCompose
+
+import           Data.ByteString  (ByteString)
+import qualified Data.ByteString  as BS
+import           GHC.IO.Handle
 import           System.Directory (getCurrentDirectory)
 import           System.Exit      (ExitCode (..))
+import           System.IO.Temp   (withTempFile)
 import           System.Process
 import           Test.Hspec
 
+type Test = (ByteString, String)
+
+tests :: [Test]
+tests =
+  [ (simpleYaml, "Runs two containers with one dependency")
+  , (threeNYaml, "Runs three containers with one dependency each")
+  , (fourNYaml, "Runs four containers with multiple dependencies")
+  ]
+
 spec :: Spec
-spec = do
-  describe "Test using docker-compose" $ do
-    it "Runs two containers with one dependency" $ do
-      res <- runDocker
-      clearDocker
+spec = describe "Test using docker-compose" $ mapM_ runSpec tests
+
+runSpec :: Test -> SpecWith ()
+runSpec (file, itt) =
+  it itt $ do
+    dir <- getCurrentDirectory
+    withTempFile dir "temp.yml" $ \fp h -> do
+      hSetBuffering h NoBuffering
+      BS.hPut h file
+      res <- execDocker fp
       res `shouldBe` True
 
-runDocker :: IO Bool
-runDocker = do
-  dir <- getCurrentDirectory
-  (exit_code, _, _) <-
-    readCreateProcessWithExitCode
-      (proc "docker-compose" ["up", "--exit-code-from", "master"])
-      {cwd = Just $ dir ++ "/test"}
-      ""
+execDocker :: FilePath -> IO Bool
+execDocker dc = runDocker dc <* clearDocker dc
+
+runDocker :: FilePath -> IO Bool
+runDocker file = do
+  (_, _, _, ph) <-
+    createProcess (proc "docker-compose" ["-f", file, "up", "--force-recreate"])
+  exit_code <- waitForProcess ph
   case exit_code of
     ExitSuccess   -> pure True
     ExitFailure e -> print e >> pure False
 
-clearDocker :: IO ()
-clearDocker = do
-  dir <- getCurrentDirectory
-  createProcess (proc "docker-compose" ["down"]) {cwd = Just $ dir ++ "/test"}
+clearDocker :: FilePath -> IO ()
+clearDocker file = do
+  (_, _, _, ph) <-
+    createProcess
+      (proc "docker-compose" ["-f", file, "down"])
+      {std_out = NoStream, std_err = NoStream}
+  _ <- waitForProcess ph
   pure ()

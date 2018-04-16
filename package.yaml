@@ -32,6 +32,7 @@ dependencies:
 - process
 - binary
 - configurator
+- optparse-applicative
 - clock
 
 library:
@@ -61,4 +62,8 @@ tests:
     - process
     - directory
     - hspec
+    - bytestring
+    - temporary
+    - yaml
+    - raw-strings-qq
 
