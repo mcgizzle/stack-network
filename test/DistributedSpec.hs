@@ -23,11 +23,11 @@ tests =
   ]
 
 spec :: Spec
-spec = describe "Test using docker-compose" $ mapM_ runSpec tests
+spec = describe "Test using docker-compose" $ mapM_ (uncurry runSpec) tests
 
-runSpec :: Test -> SpecWith ()
-runSpec (file, itt) =
-  it itt $ do
+runSpec :: ByteString -> String -> SpecWith ()
+runSpec file info =
+  it info $ do
     dir <- getCurrentDirectory
     withTempFile dir "temp.yml" $ \fp h -> do
       hSetBuffering h NoBuffering
