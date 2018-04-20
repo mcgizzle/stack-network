@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1ac75a833a0b2edfd0392f580936dda40f03f25612220922f53d254177e23d05
+-- hash: 33e4d07ccbe97e857cf8dbfa7bf68ac3def82bc4aaf463ec1a20e850b7d59a31
 
 name:           stack-network
 version:        0.1.0.0
@@ -32,6 +32,7 @@ library
     , distributed-process-simplelocalnet
     , exceptions
     , filepath
+    , lifted-base
     , optparse-applicative
     , pipes
     , pipes-safe
@@ -44,7 +45,8 @@ library
       Network.Distributed
       Network.Distributed.Types
       Network.Distributed.Utils
-      Network.Distributed.Internal
+      Network.Distributed.Process
+      Network.Distributed.Transfer
   other-modules:
       Main
       Paths_stack_network
@@ -70,6 +72,7 @@ executable stack-network
     , distributed-process-simplelocalnet
     , exceptions
     , filepath
+    , lifted-base
     , optparse-applicative
     , pipes
     , pipes-safe
@@ -81,7 +84,8 @@ executable stack-network
     , text
   other-modules:
       Network.Distributed
-      Network.Distributed.Internal
+      Network.Distributed.Process
+      Network.Distributed.Transfer
       Network.Distributed.Types
       Network.Distributed.Utils
       Paths_stack_network
@@ -109,6 +113,7 @@ test-suite distributed-test
     , exceptions
     , filepath
     , hspec
+    , lifted-base
     , optparse-applicative
     , pipes
     , pipes-safe
@@ -121,7 +126,7 @@ test-suite distributed-test
     , text
     , yaml
   other-modules:
-      DistributedSpec
       DockerCompose
+      DockerSpec
       Paths_stack_network
   default-language: Haskell2010

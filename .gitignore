@@ -3,3 +3,4 @@ testbuild1
 *.swp
 *.swo
 testbuild2
+stack-network.cabal
