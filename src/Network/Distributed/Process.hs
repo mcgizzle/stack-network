@@ -1,8 +1,9 @@
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 
 module Network.Distributed.Process where
 
@@ -12,18 +13,17 @@ import           Network.Distributed.Utils
 
 import           Control.Applicative
 import           Control.Monad
-import           Control.Monad.Catch                                (Exception, SomeException (..),
-                                                                     bracket,
-                                                                     catch)
+import           Control.Monad.Catch
 import           Prelude                                            hiding
                                                                      (FilePath,
                                                                      log)
 
-import           Control.Distributed.Process                        hiding
+import           Control.Distributed.Process.Backend.SimpleLocalnet
+import           Control.Distributed.Process.Lifted                 hiding
                                                                      (bracket,
                                                                      catch)
-import           Control.Distributed.Process.Backend.SimpleLocalnet
-import qualified Control.Distributed.Process.Node                   as PN
+import           Control.Distributed.Process.Lifted.Class
+import qualified Control.Distributed.Process.Node.Lifted            as PN
 
 import           Data.Maybe                                         (catMaybes)
 
@@ -47,16 +47,16 @@ runRequestNode' = do
   log "Searching the Network..."
   pids <- findPids
   logSucc $ "Found Nodes: " ++ show pids
-  pDeps <- liftP $ gatherDeps pids
+  pDeps <- gatherDeps pids
   log "Finding most compatable node..."
-  myDeps <- liftP listDeps
+  myDeps <- listDeps
   withTransfer pDeps myDeps retryReq $ \pid (sPort, rPort) -> do
     log $ "Node: " ++ show pid ++ " Is the best match."
-    liftP $ send pid (TransferReq sPort)
+    send pid (TransferReq sPort)
     log "Working..."
-    liftP $ receiveF rPort
+    receiveF rPort
     logSucc "Transmission complete. All files received. Ready to build."
-  liftP $ mapM_ (flip send Terminate) pids
+  mapM_ (flip send Terminate) pids
   where
     retryReq :: SomeException -> App ()
     retryReq _ = logWarn "Slave died. Retrying..." >> runRequestNode'
@@ -90,37 +90,33 @@ joinNetwork' = do
     receiveReq _ Terminate = log "Received a request to terminate. Bye."
 
 withTransfer ::
-     Exception e
+     (Exception e, MonadProcess m, MonadCatch m)
   => [ProcessDeps]
   -> Deps
-  -> (e -> App ())
-  -> (ProcessId -> (SendPort Transfer, ReceivePort Transfer) -> App ())
-  -> App ()
+  -> (e -> m ())
+  -> (ProcessId -> (SendPort Transfer, ReceivePort Transfer) -> m ())
+  -> m ()
 withTransfer pDeps myDeps retry action =
   case getBestPid pDeps myDeps (Nothing, 0) of
     Just n  -> runAction n `catch` retry
     Nothing -> logWarn "No Nodes share dependencies, aborting."
   where
     runAction n = do
-      chan <-
-        liftP $ do
-          link n
-          chan <- newChan
-          linkPort $ fst chan
-          pure chan
+      link n
+      chan <- newChan
+      linkPort (fst chan)
       action n chan
-      liftP $ do
-        unlinkPort $ fst chan
-        unlink n
+      unlinkPort (fst chan)
+      unlink n
 
-findPids :: App [ProcessId]
+findPids ::
+     (MonadMask m, MonadProcess m, MonadReader AppConfig m) => m [ProcessId]
 findPids = loop =<< asks nodes
   where
     loop nc = do
       backend <- asks backend
       nids <- liftIO $ findPeers backend 1000000
       pids <-
-        liftP $
         bracket (mapM monitorNode nids) (mapM unmonitor) $ \_ -> do
           forM_ nids $ \n -> whereisRemoteAsync n "slaveNodeS"
           catMaybes <$>
@@ -134,16 +130,22 @@ findPids = loop =<< asks nodes
         then pure pids
         else loop nc
 
-gatherDeps :: Network -> Process [ProcessDeps]
+gatherDeps :: (MonadProcess m, MonadMask m) => Network -> m [ProcessDeps]
 gatherDeps pids = do
   me <- getSelfPid
   mapM_ (flip send (Ping me)) pids
-  replicateM (length pids) (receiveWait [match $ \(PD pd) -> pure pd])
+  bracket (mapM monitor pids) (mapM unmonitor) $ \_ ->
+    catMaybes <$>
+    replicateM
+      (length pids)
+      (receiveWait
+         [ match $ \(PD pd) -> pure $ Just pd
+         , match $ \NodeMonitorNotification {} -> pure Nothing
+         ])
 
-receiveF :: ReceivePort Transfer -> Process ()
+receiveF :: MonadProcess m => ReceivePort Transfer -> m ()
 receiveF rPort = work =<< receiveChan rPort
   where
-    work :: Transfer -> Process ()
     work (TransferInProg (path, file)) = do
       liftIO $ do
         let path' = decode path

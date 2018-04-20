@@ -14,7 +14,7 @@ ghc-options:
 dependencies:
 - base >= 4.7 && < 5
 - lifted-base
-- distributed-process
+- distributed-process-lifted
 - distributed-process-simplelocalnet
 - pipes
 - pipes-safe

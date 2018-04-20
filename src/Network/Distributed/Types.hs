@@ -6,10 +6,10 @@
 
 module Network.Distributed.Types where
 
-import           Control.Distributed.Process                        (Process,
+import           Control.Distributed.Process.Backend.SimpleLocalnet (Backend)
+import           Control.Distributed.Process.Lifted                 (Process,
                                                                      ProcessId,
                                                                      SendPort)
-import           Control.Distributed.Process.Backend.SimpleLocalnet (Backend)
 import           Control.Monad.Reader
 import           Data.Binary                                        (Binary)
 import           Data.ByteString                                    (ByteString)
