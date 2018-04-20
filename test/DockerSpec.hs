@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module DistributedSpec where
+module DockerSpec where
 
 import           DockerCompose
 

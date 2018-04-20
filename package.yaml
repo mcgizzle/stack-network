@@ -13,6 +13,7 @@ ghc-options:
 
 dependencies:
 - base >= 4.7 && < 5
+- lifted-base
 - distributed-process
 - distributed-process-simplelocalnet
 - pipes
@@ -41,7 +42,8 @@ library:
   - Network.Distributed
   - Network.Distributed.Types
   - Network.Distributed.Utils
-  - Network.Distributed.Internal
+  - Network.Distributed.Process
+  - Network.Distributed.Transfer
 
 executables:
   stack-network:
