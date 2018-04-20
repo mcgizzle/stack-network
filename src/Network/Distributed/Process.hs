@@ -3,39 +3,33 @@
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Network.Distributed.Internal where
+module Network.Distributed.Process where
 
+import           Network.Distributed.Transfer
 import           Network.Distributed.Types
 import           Network.Distributed.Utils
 
 import           Control.Applicative
 import           Control.Monad
-import           Control.Monad.Catch                                (bracket)
+import           Control.Monad.Catch                                (SomeException (..),
+                                                                     bracket,
+                                                                     catch)
 import           Prelude                                            hiding
                                                                      (FilePath,
                                                                      log)
 
 import           Control.Distributed.Process                        hiding
-                                                                     (bracket)
+                                                                     (bracket,
+                                                                     catch)
 import           Control.Distributed.Process.Backend.SimpleLocalnet
 import qualified Control.Distributed.Process.Node                   as PN
 
-import           Data.DirStream
 import           Data.Maybe                                         (catMaybes)
 
 import           Filesystem
-import           Filesystem.Path                                    (FilePath,
-                                                                     directory)
-import           Filesystem.Path.CurrentOS                          (decode,
-                                                                     encode)
+import           Filesystem.Path                                    (directory)
+import           Filesystem.Path.CurrentOS                          (decode)
 
-import           Pipes
-import qualified Pipes.Prelude                                      as P
-import           Pipes.Safe                                         (MonadMask,
-                                                                     MonadSafe,
-                                                                     runSafeT)
-
--- DISTRIBUTED NODES ============================================================
 runRequestNode :: Int -> NetworkConfig -> IO ()
 runRequestNode waitN NetworkConfig {..} = do
   backend <-
@@ -54,14 +48,22 @@ runRequestNode' backend waitN = do
   myDeps <- listDeps
   case getBestPid pDeps myDeps (Nothing, 0) of
     Nothing -> logWarn "No Nodes share dependencies, aborting."
-    Just n -> do
+    Just n  -> runTransfer n `catch` abort
+  mapM_ (flip send Terminate) pids
+  where
+    runTransfer n = do
+      link n
       log $ "Node: " ++ show n ++ " Is the best match."
       (sPort, rPort) <- newChan
+      linkPort sPort
       send n (TransferReq sPort)
       log "Working..."
       receiveF rPort
+      unlinkPort sPort
+      unlink n
       logSucc "Transmission complete. All files received. Ready to build."
-      mapM_ (flip send Terminate) pids
+    abort :: SomeException -> Process ()
+    abort _ = logWarn "Slave died. Retrying..." >> runRequestNode' backend waitN
 
 joinNetwork :: NetworkConfig -> IO ()
 joinNetwork nc@NetworkConfig {..} = do
@@ -74,7 +76,7 @@ joinNetwork nc@NetworkConfig {..} = do
 joinNetwork' :: Process ()
 joinNetwork' = do
   me <- getSelfPid
-  register "nodeS" me
+  register "slaveNodeS" me
   loop me
   where
     loop me = receiveWait [match $ \req -> receiveReq me req]
@@ -91,7 +93,6 @@ joinNetwork' = do
       loop me
     receiveReq _ Terminate = log "Received a request to terminate. Bye."
 
--- HELPER FUNCTIONS ===============================================================
 findPids :: Backend -> Int -> Process [ProcessId]
 findPids backend = loop
   where
@@ -99,11 +100,14 @@ findPids backend = loop
       nids <- liftIO $ findPeers backend 1000000
       pids <-
         bracket (mapM monitorNode nids) (mapM unmonitor) $ \_ -> do
-          forM_ nids $ \n -> whereisRemoteAsync n "nodeS"
+          forM_ nids $ \n -> whereisRemoteAsync n "slaveNodeS"
           catMaybes <$>
             replicateM
               (length nids)
-              (receiveWait [match (\(WhereIsReply "nodeS" mPid) -> pure mPid)])
+              (receiveWait
+                 [ match (\(WhereIsReply "slaveNodeS" mPid) -> pure mPid)
+                 , match (\NodeMonitorNotification {} -> pure Nothing)
+                 ])
       if length pids == nc
         then pure pids
         else loop nc
@@ -114,41 +118,14 @@ gatherDeps pids = do
   mapM_ (flip send (Ping me)) pids
   replicateM (length pids) (receiveWait [match $ \(PD pd) -> pure pd])
 
------------------------------------------------------------------------------------
--- RECEIVE FILES ==================================================================
 receiveF :: ReceivePort Transfer -> Process ()
 receiveF rPort = work =<< receiveChan rPort
   where
     work :: Transfer -> Process ()
-    work (TransferInProg i) = do
-      liftIO $ saveFile i
+    work (TransferInProg (path, file)) = do
+      liftIO $ do
+        let path' = decode path
+        createTree (directory path')
+        Filesystem.writeFile path' file
       receiveF rPort
     work TransferDone = pure ()
-    saveFile :: FileInfo -> IO ()
-    saveFile (path, file) = do
-      createTree (directory path')
-      Filesystem.writeFile path' file
-      where
-        path' = decode path
-
--- SEND FILES =====================================================================
-pipeFiles :: (MonadMask m, MonadIO m) => (Transfer -> m ()) -> m ()
-pipeFiles action =
-  runSafeT $
-  runEffect $
-  for
-    (producers >-> P.filterM (liftIO . isFile) >-> P.chain (log . show) >->
-     P.mapM packageFile)
-    (lift . lift . action)
-
-producers :: MonadSafe m => Pipes.Proxy x' x () FilePath m ()
-producers =
-  every
-    (descendentOf "root/snapshots" <|> descendentOf "root/loaded-snapshot-cache")
-
-packageFile :: MonadIO m => FilePath -> m Transfer
-packageFile file =
-  liftIO $ do
-    conts <- Filesystem.readFile file
-    pure $ TransferInProg (encode file, conts)
------------------------------------------------------------------------------------
