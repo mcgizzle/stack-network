@@ -35,6 +35,8 @@ dependencies:
 - configurator
 - optparse-applicative
 - clock
+- mtl
+- transformers
 
 library:
   source-dirs: src

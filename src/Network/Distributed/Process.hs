@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
@@ -11,7 +12,7 @@ import           Network.Distributed.Utils
 
 import           Control.Applicative
 import           Control.Monad
-import           Control.Monad.Catch                                (SomeException (..),
+import           Control.Monad.Catch                                (Exception, SomeException (..),
                                                                      bracket,
                                                                      catch)
 import           Prelude                                            hiding
@@ -30,40 +31,35 @@ import           Filesystem
 import           Filesystem.Path                                    (directory)
 import           Filesystem.Path.CurrentOS                          (decode)
 
+import           Control.Monad.Reader
+
 runRequestNode :: Int -> NetworkConfig -> IO ()
 runRequestNode waitN NetworkConfig {..} = do
   backend <-
     initializeBackend hostNetworkConfig portNetworkConfig PN.initRemoteTable
   node <- newLocalNode backend
-  PN.runProcess node (runRequestNode' backend waitN)
+  let cfg = AppConfig waitN backend
+  PN.runProcess node (runApp cfg runRequestNode')
   runStackBuildT
 
-runRequestNode' :: Backend -> Int -> Process ()
-runRequestNode' backend waitN = do
+runRequestNode' :: App ()
+runRequestNode' = do
   log "Searching the Network..."
-  pids <- findPids backend waitN
+  pids <- findPids
   logSucc $ "Found Nodes: " ++ show pids
-  pDeps <- gatherDeps pids
+  pDeps <- liftP $ gatherDeps pids
   log "Finding most compatable node..."
-  myDeps <- listDeps
-  case getBestPid pDeps myDeps (Nothing, 0) of
-    Nothing -> logWarn "No Nodes share dependencies, aborting."
-    Just n  -> runTransfer n `catch` abort
-  mapM_ (flip send Terminate) pids
+  myDeps <- liftP listDeps
+  withTransfer pDeps myDeps retryReq $ \pid (sPort, rPort) -> do
+    log $ "Node: " ++ show pid ++ " Is the best match."
+    liftP $ send pid (TransferReq sPort)
+    log "Working..."
+    liftP $ receiveF rPort
+    logSucc "Transmission complete. All files received. Ready to build."
+  liftP $ mapM_ (flip send Terminate) pids
   where
-    runTransfer n = do
-      link n
-      log $ "Node: " ++ show n ++ " Is the best match."
-      (sPort, rPort) <- newChan
-      linkPort sPort
-      send n (TransferReq sPort)
-      log "Working..."
-      receiveF rPort
-      unlinkPort sPort
-      unlink n
-      logSucc "Transmission complete. All files received. Ready to build."
-    abort :: SomeException -> Process ()
-    abort _ = logWarn "Slave died. Retrying..." >> runRequestNode' backend waitN
+    retryReq :: SomeException -> App ()
+    retryReq _ = logWarn "Slave died. Retrying..." >> runRequestNode'
 
 joinNetwork :: NetworkConfig -> IO ()
 joinNetwork nc@NetworkConfig {..} = do
@@ -93,12 +89,38 @@ joinNetwork' = do
       loop me
     receiveReq _ Terminate = log "Received a request to terminate. Bye."
 
-findPids :: Backend -> Int -> Process [ProcessId]
-findPids backend = loop
+withTransfer ::
+     Exception e
+  => [ProcessDeps]
+  -> Deps
+  -> (e -> App ())
+  -> (ProcessId -> (SendPort Transfer, ReceivePort Transfer) -> App ())
+  -> App ()
+withTransfer pDeps myDeps retry action =
+  case getBestPid pDeps myDeps (Nothing, 0) of
+    Just n  -> runAction n `catch` retry
+    Nothing -> logWarn "No Nodes share dependencies, aborting."
+  where
+    runAction n = do
+      chan <-
+        liftP $ do
+          link n
+          chan <- newChan
+          linkPort $ fst chan
+          pure chan
+      action n chan
+      liftP $ do
+        unlinkPort $ fst chan
+        unlink n
+
+findPids :: App [ProcessId]
+findPids = loop =<< asks nodes
   where
     loop nc = do
+      backend <- asks backend
       nids <- liftIO $ findPeers backend 1000000
       pids <-
+        liftP $
         bracket (mapM monitorNode nids) (mapM unmonitor) $ \_ -> do
           forM_ nids $ \n -> whereisRemoteAsync n "slaveNodeS"
           catMaybes <$>

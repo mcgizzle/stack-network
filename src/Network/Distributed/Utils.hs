@@ -1,8 +1,10 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Network.Distributed.Utils where
 
 import           Control.Monad.IO.Class    (MonadIO, liftIO)
+import           Control.Monad.Trans.Class (MonadTrans, lift)
 import qualified Data.Configurator         as C
 import           Data.List                 (intersect)
 import           Network.Distributed.Types
@@ -14,6 +16,10 @@ import           System.Exit               (ExitCode (..))
 import           System.IO                 (BufferMode (..), hGetContents,
                                             hSetBuffering)
 import           System.Process
+
+-- Monad =========
+liftP :: (MonadTrans t, Monad m) => m a -> t m a
+liftP = lift
 
 -- CONFIG ==========================================================================
 parseNetConfig :: IO NetworkConfig

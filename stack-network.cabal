@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 33e4d07ccbe97e857cf8dbfa7bf68ac3def82bc4aaf463ec1a20e850b7d59a31
+-- hash: 2c317f485fdc42effe61bfe4d7ea290181ccd2c157a3ae2e9bb1fc15282ad809
 
 name:           stack-network
 version:        0.1.0.0
@@ -33,6 +33,7 @@ library
     , exceptions
     , filepath
     , lifted-base
+    , mtl
     , optparse-applicative
     , pipes
     , pipes-safe
@@ -41,6 +42,7 @@ library
     , system-filepath
     , temporary
     , text
+    , transformers
   exposed-modules:
       Network.Distributed
       Network.Distributed.Types
@@ -73,6 +75,7 @@ executable stack-network
     , exceptions
     , filepath
     , lifted-base
+    , mtl
     , optparse-applicative
     , pipes
     , pipes-safe
@@ -82,6 +85,7 @@ executable stack-network
     , system-filepath
     , temporary
     , text
+    , transformers
   other-modules:
       Network.Distributed
       Network.Distributed.Process
@@ -114,6 +118,7 @@ test-suite distributed-test
     , filepath
     , hspec
     , lifted-base
+    , mtl
     , optparse-applicative
     , pipes
     , pipes-safe
@@ -124,6 +129,7 @@ test-suite distributed-test
     , system-filepath
     , temporary
     , text
+    , transformers
     , yaml
   other-modules:
       DockerCompose
