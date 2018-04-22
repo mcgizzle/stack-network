@@ -5,7 +5,7 @@ module Network.Distributed.Transfer where
 import           Network.Distributed.Types
 import           Network.Distributed.Utils
 
-import           Control.Applicative       ((<|>))
+import           Control.Applicative
 import           Data.DirStream
 import           Filesystem
 import           Filesystem.Path           (FilePath)
@@ -31,6 +31,4 @@ producers =
 
 packageFile :: MonadIO m => FilePath -> m Transfer
 packageFile file =
-  liftIO $ do
-    conts <- Filesystem.readFile file
-    pure $ TransferInProg (encode file, conts)
+  liftIO $ TransferInProg . (,) (encode file) <$> Filesystem.readFile file

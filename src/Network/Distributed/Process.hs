@@ -33,20 +33,23 @@ import           Filesystem.Path.CurrentOS                          (decode)
 
 import           Control.Monad.Reader
 
+mkBackend :: NetworkConfig -> IO Backend
+mkBackend nc@NetworkConfig {..} = do
+  log ("Node joining network on: " ++ show nc)
+  initializeBackend hostNetworkConfig portNetworkConfig PN.initRemoteTable
+
 runRequestNode :: Int -> NetworkConfig -> IO ()
-runRequestNode waitN NetworkConfig {..} = do
-  backend <-
-    initializeBackend hostNetworkConfig portNetworkConfig PN.initRemoteTable
-  node <- newLocalNode backend
+runRequestNode waitN nc = do
+  backend <- mkBackend nc
   let cfg = AppConfig waitN backend
-  PN.runProcess node (runApp cfg runRequestNode')
+  flip PN.runProcess (runApp cfg runRequestNode') =<< newLocalNode backend
   runStackBuildT
 
 runRequestNode' :: App ()
 runRequestNode' = do
   log "Searching the Network..."
   pids <- findPids
-  logSucc $ "Found Nodes: " ++ show pids
+  logSucc ("Found Nodes: " ++ show pids)
   pDeps <- gatherDeps pids
   log "Finding most compatable node..."
   myDeps <- listDeps
@@ -56,18 +59,13 @@ runRequestNode' = do
     log "Working..."
     receiveF rPort
     logSucc "Transmission complete. All files received. Ready to build."
-  mapM_ (flip send Terminate) pids
+  mapM_ (`send` Terminate) pids
   where
     retryReq :: SomeException -> App ()
     retryReq _ = logWarn "Slave died. Retrying..." >> runRequestNode'
 
 joinNetwork :: NetworkConfig -> IO ()
-joinNetwork nc@NetworkConfig {..} = do
-  log $ "Node joining network on: " ++ show nc
-  node <-
-    newLocalNode =<<
-    initializeBackend hostNetworkConfig portNetworkConfig PN.initRemoteTable
-  PN.runProcess node joinNetwork'
+joinNetwork = mkBackend >=> newLocalNode >=> flip PN.runProcess joinNetwork'
 
 joinNetwork' :: Process ()
 joinNetwork' = do
@@ -132,8 +130,8 @@ findPids = loop =<< asks nodes
 
 gatherDeps :: (MonadProcess m, MonadMask m) => Network -> m [ProcessDeps]
 gatherDeps pids = do
-  me <- getSelfPid
-  mapM_ (flip send (Ping me)) pids
+  ping <- Ping <$> getSelfPid
+  mapM_ (`send` ping) pids
   bracket (mapM monitor pids) (mapM unmonitor) $ \_ ->
     catMaybes <$>
     replicateM
