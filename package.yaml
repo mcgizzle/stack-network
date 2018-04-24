@@ -61,8 +61,6 @@ executables:
   stack-network:
     source-dirs: src
     main: Main.hs
-    dependencies: 
-    - stack-network
 tests:
   distributed-test:
     main:                Spec.hs
