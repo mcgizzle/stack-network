@@ -2,8 +2,18 @@ name:                stack-network
 version:             0.1.0.0
 license:             BSD3
 author:              "Sean McGroarty"
-maintainer:          "mcgroas@tcd.ie"
+maintainer:          "Sean McGroarty <mcgroas@tcd.ie>"
 copyright:           "2018 Sean McGroarty"
+description: "See README at <https://github.com/McGizzle/stack-network#readme>"
+synopsis: "A program for extending Stack to add distributed capabilities"
+github: McGizzle/stack-network
+extra-source-files:
+  - README.md
+  - network.config
+  - build4docker.sh
+  - rundock.sh
+  - docker-compose.yml
+category: Web
 
 ghc-options:
 - -Wall
