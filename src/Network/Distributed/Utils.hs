@@ -1,6 +1,13 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+-- |
+-- Module:      Network.Distributed.Transfer
+-- Copyright:   (c) 2018 Sean McGroarty
+-- License:     BSD3
+-- Maintainer:  Sean McGroarty <mcgroas@tcd.ie.com>
+-- Stability:   experimental
+--
 module Network.Distributed.Utils
   ( parseNetConfig
   , log

@@ -1,5 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- |
+-- Module:      Network.Distributed.Transfer
+-- Copyright:   (c) 2018 Sean McGroarty
+-- License:     BSD3
+-- Maintainer:  Sean McGroarty <mcgroas@tcd.ie.com>
+-- Stability:   experimental
+--
 module Network.Distributed.Transfer where
 
 import           Network.Distributed.Types
@@ -30,11 +37,13 @@ pipeFiles action =
      P.mapM packageFile)
     (lift . lift . action)
 
+-- | Produces output for the pipeline
 producers :: MonadSafe m => Pipes.Proxy x' x () FilePath m ()
 producers =
   every
     (descendentOf "root/snapshots" <|> descendentOf "root/loaded-snapshot-cache")
 
+-- | Packages a file by reading in its bytes
 packageFile :: MonadIO m => FilePath -> m Transfer
 packageFile file =
   liftIO $ TransferInProg . (,) (encode file) <$> Filesystem.readFile file

@@ -5,6 +5,13 @@
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 
+-- |
+-- Module:      Network.Distributed.Process
+-- Copyright:   (c) 2018 Sean McGroarty
+-- License:     BSD3
+-- Maintainer:  Sean McGroarty <mcgroas@tcd.ie.com>
+-- Stability:   experimental
+--
 module Network.Distributed.Process
   ( runRequestNode
   , runRequestNode'

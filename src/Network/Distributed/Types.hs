@@ -1,9 +1,15 @@
-{-# LANGUAGE DeriveDataTypeable         #-}
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE RecordWildCards    #-}
 
+-- |
+-- Module:      Network.Distributed.Types
+-- Copyright:   (c) 2018 Sean McGroarty
+-- License:     BSD3
+-- Maintainer:  Sean McGroarty <mcgroas@tcd.ie.com>
+-- Stability:   experimental
+--
 module Network.Distributed.Types where
 
 import           Control.Distributed.Process.Backend.SimpleLocalnet (Backend)
@@ -19,18 +25,22 @@ import           Filesystem.Path.CurrentOS                          (decode)
 import           GHC.Generics                                       (Generic)
 
 ---------------------------------------------------------------------------------
+-- | Configuration for the master node
 data AppConfig = AppConfig
   { nodes   :: Int
+  -- ^ Number of slave nodes the master should wait for before attempting a build
   , backend :: Backend
   }
 
 -- | A Monad which wraps Process with ReaderT
 type App a = ReaderT AppConfig Process a
 
+-- | Runs App
 runApp :: AppConfig -> App a -> Process a
 runApp = flip runReaderT
 
 ---------------------------------------------------------------------------------
+-- | Host and Port of a Node
 data NetworkConfig = NetworkConfig
   { hostNetworkConfig :: String
   , portNetworkConfig :: String
@@ -50,11 +60,14 @@ type Network = [Node]
 -- | The dependecies a Node has, represented as a list of Strings
 type Deps = [String]
 
+-- | A Node and its dependencies
 type ProcessDeps = (Deps, ProcessId)
 
+-- | Tuple of file name and bytes
 type FileInfo = (Text, ByteString)
 
 ---------------------------------------------------------------------------------
+-- | All Types used messaging are derived from a Message
 data Message
   = Request
   | Response
@@ -81,6 +94,7 @@ data Response
 
 instance Binary Response
 
+-- | Data-Type used in a Transfer
 data Transfer
   = TransferInProg FileInfo
   -- ^ Transfer In Progress
