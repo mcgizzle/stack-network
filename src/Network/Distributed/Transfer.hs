@@ -15,7 +15,13 @@ import qualified Pipes.Prelude             as P
 import           Pipes.Safe                (MonadMask, MonadSafe, runSafeT)
 import           Prelude                   hiding (FilePath, log)
 
-pipeFiles :: (MonadMask m, MonadIO m) => (Transfer -> m ()) -> m ()
+--------------------------------------------------------------------------------------------
+-- | Internal function that executes a pipeline of effects
+pipeFiles ::
+     (MonadMask m, MonadIO m)
+  => (Transfer -> m ())
+  -- ^ Function that accepts a Transfer and has IO at its base
+  -> m ()
 pipeFiles action =
   runSafeT $
   runEffect $
@@ -32,3 +38,4 @@ producers =
 packageFile :: MonadIO m => FilePath -> m Transfer
 packageFile file =
   liftIO $ TransferInProg . (,) (encode file) <$> Filesystem.readFile file
+--------------------------------------------------------------------------------------------

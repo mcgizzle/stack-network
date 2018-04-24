@@ -5,7 +5,16 @@
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 
-module Network.Distributed.Process where
+module Network.Distributed.Process
+  ( runRequestNode
+  , runRequestNode'
+  , joinNetwork
+  , joinNetwork'
+  , findPids
+  , gatherDeps
+  , receiveF
+  , withTransfer
+  ) where
 
 import           Network.Distributed.Transfer
 import           Network.Distributed.Types
@@ -33,18 +42,26 @@ import           Filesystem.Path.CurrentOS                          (decode)
 
 import           Control.Monad.Reader
 
+----------------------------------------------------------------------------
+-- | Logs that the Node is joining the network and returns a Backend
 mkBackend :: NetworkConfig -> IO Backend
 mkBackend nc@NetworkConfig {..} = do
   log ("Node joining network on: " ++ show nc)
   initializeBackend hostNetworkConfig portNetworkConfig PN.initRemoteTable
 
-runRequestNode :: Int -> NetworkConfig -> IO ()
+-- | Runs a Process that is a master node
+runRequestNode ::
+     Int
+  -- ^ Number of slave nodes the master should wait for
+  -> NetworkConfig
+  -> IO ()
 runRequestNode waitN nc = do
   backend <- mkBackend nc
   let cfg = AppConfig waitN backend
   flip PN.runProcess (runApp cfg runRequestNode') =<< newLocalNode backend
   runStackBuildT
 
+-- | Internal for master node
 runRequestNode' :: App ()
 runRequestNode' = do
   log "Searching the Network..."
@@ -64,9 +81,11 @@ runRequestNode' = do
     retryReq :: SomeException -> App ()
     retryReq _ = logWarn "Slave died. Retrying..." >> runRequestNode'
 
+-- | Creates the Backend and runs a Process that is a Slave node
 joinNetwork :: NetworkConfig -> IO ()
 joinNetwork = mkBackend >=> newLocalNode >=> flip PN.runProcess joinNetwork'
 
+-- | Internal for slave node
 joinNetwork' :: Process ()
 joinNetwork' = do
   me <- getSelfPid
@@ -87,12 +106,17 @@ joinNetwork' = do
       loop me
     receiveReq _ Terminate = log "Received a request to terminate. Bye."
 
+-- | Faciliaties a safe Transfer bewteen nodes
 withTransfer ::
      (Exception e, MonadProcess m, MonadCatch m)
   => [ProcessDeps]
+  -- ^ Slaves process dependencies
   -> Deps
+  -- ^ Masters dependencies
   -> (e -> m ())
+  -- ^ Recovery function
   -> (ProcessId -> (SendPort Transfer, ReceivePort Transfer) -> m ())
+  -- ^ Action to execute with the linked process and typed-channel
   -> m ()
 withTransfer pDeps myDeps retry action =
   case getBestPid pDeps myDeps (Nothing, 0) of
@@ -107,6 +131,7 @@ withTransfer pDeps myDeps retry action =
       unlinkPort (fst chan)
       unlink n
 
+-- | Internal function used to gather ProcessId's
 findPids ::
      (MonadMask m, MonadProcess m, MonadReader AppConfig m) => m [ProcessId]
 findPids = loop =<< asks nodes
@@ -116,7 +141,7 @@ findPids = loop =<< asks nodes
       nids <- liftIO $ findPeers backend 1000000
       pids <-
         bracket (mapM monitorNode nids) (mapM unmonitor) $ \_ -> do
-          forM_ nids $ \n -> whereisRemoteAsync n "slaveNodeS"
+          mapM_ (`whereisRemoteAsync` "slaveNodeS") nids
           catMaybes <$>
             replicateM
               (length nids)
@@ -128,6 +153,7 @@ findPids = loop =<< asks nodes
         then pure pids
         else loop nc
 
+-- | Internal function used to get all slaves dependencies
 gatherDeps :: (MonadProcess m, MonadMask m) => Network -> m [ProcessDeps]
 gatherDeps pids = do
   ping <- Ping <$> getSelfPid
@@ -141,6 +167,7 @@ gatherDeps pids = do
          , match $ \NodeMonitorNotification {} -> pure Nothing
          ])
 
+-- | Internal function used to reveive the Transfer
 receiveF :: MonadProcess m => ReceivePort Transfer -> m ()
 receiveF rPort = work =<< receiveChan rPort
   where

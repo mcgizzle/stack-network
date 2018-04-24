@@ -1,7 +1,17 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Network.Distributed.Utils where
+module Network.Distributed.Utils
+  ( parseNetConfig
+  , log
+  , logSucc
+  , logWarn
+  , listDeps
+  , getBestPid
+  , timeIt
+  , runStackBuild
+  , runStackBuildT
+  ) where
 
 import           Control.Monad.IO.Class    (MonadIO, liftIO)
 import qualified Data.Configurator         as C
@@ -16,22 +26,27 @@ import           System.IO                 (BufferMode (..), hGetContents,
                                             hSetBuffering)
 import           System.Process
 
--- CONFIG ==========================================================================
+-------------------------------------------------------------------------------------
+-- | Parsers configuration from provided file
 parseNetConfig :: IO NetworkConfig
 parseNetConfig = do
   cfg <- C.load [C.Required "network.config"]
   NetworkConfig <$> C.require cfg "net.host" <*> C.require cfg "net.port"
 
--- LOGGING ==========================================================================
+-------------------------------------------------------------------------------------
+-- | Logs to stdout in grey
 log :: MonadIO m => String -> m ()
 log = log' [[SetColor Foreground Vivid Black]]
 
+-- | Logs to stdout in green
 logSucc :: MonadIO m => String -> m ()
 logSucc = log' [[SetColor Foreground Vivid Green]]
 
+-- | Logs to stdout in red
 logWarn :: MonadIO m => String -> m ()
 logWarn = log' [[SetColor Foreground Dull Red]]
 
+-- | Internal log function
 log' :: MonadIO m => [[SGR]] -> String -> m ()
 log' styles msg =
   liftIO $ do
@@ -39,7 +54,8 @@ log' styles msg =
     putStrLn msg
     setSGR [Reset]
 
--- List Deps ========================================================================
+---------------------------------------------------------------------------------------
+-- | Determines a nodes dependencies
 listDeps :: MonadIO m => m [String]
 listDeps =
   liftIO $ do
@@ -54,6 +70,24 @@ listDeps =
       ExitSuccess   -> lines <$> hGetContents hStdout
       ExitFailure _ -> logWarn "Error calculating dependencies" >> pure []
 
+-- | Finds the ProcessId with the most overlapp, returning Nothing if there is no overlapp
+getBestPid ::
+     [(Deps, Node)]
+  -- ^ a list of pairs of Nodes and their dependencies
+  -> Deps
+  -- ^ Master nodes dependencies
+  -> (Maybe Node, Int)
+  -- ^ Current best. Initially set to (Nothing,0)
+  -> Maybe Node
+getBestPid [] _ best = fst best
+getBestPid ((curDeps, curPid):xs) cmpDeps curBest
+  | curLen > snd curBest = recurse (Just curPid, curLen)
+  | otherwise = recurse curBest
+  where
+    curLen = length (curDeps `intersect` cmpDeps)
+    recurse = getBestPid xs cmpDeps
+
+-------------------------------------------------------------------------------------
 runStackBuildT :: IO ()
 runStackBuildT = timeIt runStackBuild
 
@@ -64,18 +98,13 @@ runStackBuild = do
   callProcess "stack" ["build", "--stack-root", path ++ "/root"]
   logSucc "Build Succesfully Completed."
 
--- FIND BEST MATCH ==================================================================
-getBestPid :: [(Deps, Node)] -> Deps -> (Maybe Node, Int) -> Maybe Node
-getBestPid [] _ best = fst best
-getBestPid ((curDeps, curPid):xs) cmpDeps curBest
-  | curLen > snd curBest = recurse (Just curPid, curLen)
-  | otherwise = recurse curBest
-  where
-    curLen = length (curDeps `intersect` cmpDeps)
-    recurse = getBestPid xs cmpDeps
-
--- Timing
-timeIt :: MonadIO m => m a -> m a
+-------------------------------------------------------------------------------------
+-- | Times an action
+timeIt ::
+     MonadIO m
+  => m a
+  -- ^ Action to time
+  -> m a
 timeIt action = do
   start <- liftIO $ getTime Monotonic
   res <- action
