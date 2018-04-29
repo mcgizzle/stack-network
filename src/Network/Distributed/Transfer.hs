@@ -7,14 +7,20 @@
 -- Maintainer:  Sean McGroarty <mcgroas@tcd.ie.com>
 -- Stability:   experimental
 --
-module Network.Distributed.Transfer where
+module Network.Distributed.Transfer
+  ( pipeFiles
+  , packageFile
+  , producers
+  ) where
 
+--------------------------------------------------------------------------------------------
 import           Network.Distributed.Types
 import           Network.Distributed.Utils
 
-import           Control.Applicative
-import           Data.DirStream
-import           Filesystem
+--------------------------------------------------------------------------------------------
+import           Control.Applicative       ((<|>))
+import           Data.DirStream            (descendentOf)
+import           Filesystem                (isFile, readFile)
 import           Filesystem.Path           (FilePath)
 import           Filesystem.Path.CurrentOS (encode)
 import           Pipes

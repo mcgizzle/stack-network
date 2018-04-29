@@ -16,7 +16,8 @@ import           Control.Distributed.Process.Backend.SimpleLocalnet (Backend)
 import           Control.Distributed.Process.Lifted                 (Process,
                                                                      ProcessId,
                                                                      SendPort)
-import           Control.Monad.Reader
+import           Control.Monad.Reader                               (ReaderT,
+                                                                     runReaderT)
 import           Data.Binary                                        (Binary)
 import           Data.ByteString                                    (ByteString)
 import           Data.Text                                          (Text)

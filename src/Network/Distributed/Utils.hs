@@ -20,10 +20,13 @@ module Network.Distributed.Utils
   , runStackBuildT
   ) where
 
+-------------------------------------------------------------------------------------
+import           Network.Distributed.Types
+
+-------------------------------------------------------------------------------------
 import           Control.Monad.IO.Class    (MonadIO, liftIO)
 import qualified Data.Configurator         as C
 import           Data.List                 (intersect)
-import           Network.Distributed.Types
 import           Prelude                   hiding (log)
 import           System.Clock
 import           System.Console.ANSI
@@ -34,7 +37,7 @@ import           System.IO                 (BufferMode (..), hGetContents,
 import           System.Process
 
 -------------------------------------------------------------------------------------
--- | Parsers configuration from provided file
+-- | Parsers configuration from provided @network.config@ file
 parseNetConfig :: IO NetworkConfig
 parseNetConfig = do
   cfg <- C.load [C.Required "network.config"]
@@ -107,6 +110,8 @@ runStackBuild = do
 
 -------------------------------------------------------------------------------------
 -- | Times an action
+--
+--Logs out the amount of seconds the action took
 timeIt ::
      MonadIO m
   => m a

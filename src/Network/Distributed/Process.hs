@@ -23,31 +23,38 @@ module Network.Distributed.Process
   , withTransfer
   ) where
 
+----------------------------------------------------------------------------------------
 import           Network.Distributed.Transfer
 import           Network.Distributed.Types
 import           Network.Distributed.Utils
 
-import           Control.Applicative
-import           Control.Monad
-import           Control.Monad.Catch
-import           Prelude                                            hiding
-                                                                     (FilePath,
-                                                                     log)
-
-import           Control.Distributed.Process.Backend.SimpleLocalnet
+----------------------------------------------------------------------------------------
+import           Control.Distributed.Process.Backend.SimpleLocalnet (Backend,
+                                                                     findPeers,
+                                                                     initializeBackend,
+                                                                     newLocalNode)
 import           Control.Distributed.Process.Lifted                 hiding
                                                                      (bracket,
                                                                      catch)
-import           Control.Distributed.Process.Lifted.Class
+import           Control.Distributed.Process.Lifted.Class           (MonadProcess)
 import qualified Control.Distributed.Process.Node.Lifted            as PN
-
+import           Control.Monad                                      (replicateM,
+                                                                     (>=>))
+import           Control.Monad.Catch                                (MonadCatch,
+                                                                     MonadMask,
+                                                                     SomeException,
+                                                                     bracket,
+                                                                     catch)
+import           Control.Monad.Reader                               (MonadReader,
+                                                                     asks)
 import           Data.Maybe                                         (catMaybes)
-
-import           Filesystem
+import           Filesystem                                         (createTree,
+                                                                     writeFile)
 import           Filesystem.Path                                    (directory)
 import           Filesystem.Path.CurrentOS                          (decode)
-
-import           Control.Monad.Reader
+import           Prelude                                            hiding
+                                                                     (FilePath,
+                                                                     log)
 
 ----------------------------------------------------------------------------
 -- | Logs that the Node is joining the network and returns a Backend
