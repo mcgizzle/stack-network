@@ -6,6 +6,7 @@ import           DockerCompose
 
 import           Data.ByteString  (ByteString)
 import qualified Data.ByteString  as BS
+import           Data.Monoid      ((<>))
 import           GHC.IO.Handle
 import           System.Directory (getCurrentDirectory)
 import           System.Exit      (ExitCode (..))
@@ -22,8 +23,13 @@ tests =
   , (fourNYaml, "Runs four containers with multiple dependencies")
   ]
 
+timeTests :: [Test]
+timeTests = [(fiveDeps, "5 Deps"), (sevenDeps, "7 Deps")]
+
 spec :: Spec
-spec = describe "Test using docker-compose" $ mapM_ (uncurry runSpec) tests
+spec =
+  describe "Test using docker-compose" $
+  mapM_ (uncurry runSpec) $ tests <> timeTests
 
 runSpec :: ByteString -> String -> SpecWith ()
 runSpec file info =

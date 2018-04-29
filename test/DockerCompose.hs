@@ -6,6 +6,48 @@ module DockerCompose where
 import           Data.ByteString   (ByteString)
 import           Text.RawString.QQ
 
+sevenDeps :: ByteString
+sevenDeps =
+  [r|
+slave:
+  image: mcgizzle/stack-network
+  command: bash -c "cd testbuild && sed -i -e 's|&port|7001|' network.config && sed -i -e 's|mwc-random|text|' testbuild1.cabal && stack-network join"
+  tty: true
+  stdin_open: true
+  net: "host"
+  ports:
+    - "7001:7001"
+master:
+  image: mcgizzle/stack-network
+  command: bash -c "cd testbuild && sed -i -e 's|&port|7000|' network.config && sed -i -e 's|mwc-random|text|' testbuild1.cabal && stack-network build"
+  tty: true
+  stdin_open: true
+  net: "host"
+  ports:
+    - "7000:7000"
+|]
+
+fiveDeps :: ByteString
+fiveDeps =
+  [r|
+slave:
+  image: mcgizzle/stack-network
+  command: bash -c "cd testbuild && sed -i -e 's|&port|7001|' network.config && sed -i -e 's|mwc-random|attoparsec|' testbuild1.cabal && stack-network join"
+  tty: true
+  stdin_open: true
+  net: "host"
+  ports:
+    - "7001:7001"
+master:
+  image: mcgizzle/stack-network
+  command: bash -c "cd testbuild && sed -i -e 's|&port|7000|' network.config && sed -i -e 's|mwc-random|attoparsec|' testbuild1.cabal && stack-network build"
+  tty: true
+  stdin_open: true
+  net: "host"
+  ports:
+    - "7000:7000"
+|]
+
 fourNYaml :: ByteString
 fourNYaml =
   [r|
@@ -27,7 +69,7 @@ slave2:
     - "7002:7002"
 slave1:
   image: mcgizzle/stack-network
-  command: bash -c "cd testbuild && sed -i -e 's|&port|7001|' network.config && sed -i -e 's|mwc-random|mtl,mwc-random|' testbuild1.cabal && stack-network join"
+  command: bash -c "cd testbuild && sed -i -e 's|&port|7001|' network.config && sed -i -e 's|mwc-random|mwc-random|' testbuild1.cabal && stack-network join"
   tty: true
   stdin_open: true
   net: "host"
@@ -35,7 +77,7 @@ slave1:
     - "7001:7001"
 master:
   image: mcgizzle/stack-network
-  command: bash -c "cd testbuild && sed -i -e 's|&port|7000|' network.config && sed -i -e 's|mwc-random|mtl,mwc-random|' testbuild1.cabal && stack-network build -n 3"
+  command: bash -c "cd testbuild && sed -i -e 's|&port|7000|' network.config && sed -i -e 's|mwc-random|mwc-random|' testbuild1.cabal && stack-network build -n 3"
   tty: true
   stdin_open: true
   net: "host"
