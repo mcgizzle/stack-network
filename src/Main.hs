@@ -1,13 +1,23 @@
-{-# LANGUAGE LambdaCase #-}
+-- |
+-- Module:      Main
+-- Copyright:   (c) 2018 Sean McGroarty
+-- License:     BSD3
+-- Maintainer:  Sean McGroarty <mcgroas@tcd.ie.com>
+-- Stability:   experimental
+--
+module Main
+  ( main
+  ) where
 
-module Main where
+-------------------------------------------------------------------------------------------
+import           Network.Distributed
 
+-------------------------------------------------------------------------------------------
 import           Control.Monad       (join)
 import           Data.Semigroup      ((<>))
-import           Network.Distributed
 import           Options.Applicative
 
-data Opts = Opts
+newtype Opts = Opts
   { waitNodes :: Int
   }
 
@@ -29,19 +39,14 @@ description =
   header "stack-network"
 
 commands :: Parser (IO ())
-commands = subparser $ buildCmd <> joinCmd
+commands =
+  subparser $
+  command "build" (info (runBuild <$> optParser) description) <>
+  command "join" (info (pure runJoin) description)
+  where
+    runJoin = runStackBuildT >> parseNetConfig >>= joinNetwork
+    runBuild opts = runRequestNode (waitNodes opts) =<< parseNetConfig
 
-buildCmd :: Mod CommandFields (IO ())
-buildCmd = command "build" (info (runBuild <$> optParser) description)
-
-joinCmd :: Mod CommandFields (IO ())
-joinCmd = command "join" (info (pure runJoin) description)
-
-runJoin :: IO ()
-runJoin = runStackBuildT >> parseNetConfig >>= joinNetwork
-
-runBuild :: Opts -> IO ()
-runBuild opts = runRequestNode (waitNodes opts) =<< parseNetConfig
-
+-- | Main
 main :: IO ()
 main = join $ execParser (info (commands <**> helper) description)

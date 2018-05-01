@@ -13,22 +13,21 @@ module Network.Distributed.Transfer
   , producers
   ) where
 
---------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------
 import           Network.Distributed.Types
 import           Network.Distributed.Utils
 
---------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------
 import           Control.Applicative       ((<|>))
 import           Data.DirStream            (descendentOf)
 import           Filesystem                (isFile, readFile)
 import           Filesystem.Path           (FilePath)
-import           Filesystem.Path.CurrentOS (encode)
 import           Pipes
 import qualified Pipes.Prelude             as P
 import           Pipes.Safe                (MonadMask, MonadSafe, runSafeT)
 import           Prelude                   hiding (FilePath, log)
 
---------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------
 -- | Internal function that executes a pipeline of effects
 pipeFiles ::
      (MonadMask m, MonadIO m)
@@ -51,6 +50,6 @@ producers =
 
 -- | Packages a file by reading in its bytes
 packageFile :: MonadIO m => FilePath -> m Transfer
-packageFile file =
-  liftIO $ TransferInProg . (,) (encode file) <$> Filesystem.readFile file
---------------------------------------------------------------------------------------------
+packageFile path =
+  liftIO $ TransferInProg . (,) (encodePath path) <$> Filesystem.readFile path
+--------------------------------------------------------------------------------------

@@ -51,19 +51,18 @@ import           Data.Maybe                                         (catMaybes)
 import           Filesystem                                         (createTree,
                                                                      writeFile)
 import           Filesystem.Path                                    (directory)
-import           Filesystem.Path.CurrentOS                          (decode)
 import           Prelude                                            hiding
                                                                      (FilePath,
                                                                      log)
 
 ----------------------------------------------------------------------------
--- | Logs that the Node is joining the network and returns a Backend
+-- | Logs that the 'Node' is joining the network and returns a 'Backend'
 mkBackend :: NetworkConfig -> IO Backend
 mkBackend nc@NetworkConfig {..} = do
   log ("Node joining network on: " ++ show nc)
   initializeBackend hostNetworkConfig portNetworkConfig PN.initRemoteTable
 
--- | Runs a Process that is a master node
+-- | Runs a 'Process' that is a master 'Node'
 runRequestNode ::
      Int
   -- ^ Number of slave nodes the master should wait for
@@ -72,11 +71,11 @@ runRequestNode ::
 runRequestNode waitN nc = do
   backend <- mkBackend nc
   let cfg = AppConfig waitN backend
-  flip PN.runProcess (runApp cfg runRequestNode') =<< newLocalNode backend
+  flip PN.runProcess (runNetProc cfg runRequestNode') =<< newLocalNode backend
   runStackBuildT
 
--- | Internal for master node
-runRequestNode' :: App ()
+-- | Internal for master 'Node'
+runRequestNode' :: NetProc ()
 runRequestNode' = do
   log "Searching the Network..."
   pids <- findPids
@@ -92,14 +91,14 @@ runRequestNode' = do
     logSucc "Transmission complete. All files received. Ready to build."
   mapM_ (`send` Terminate) pids
   where
-    retryReq :: SomeException -> App ()
+    retryReq :: SomeException -> NetProc ()
     retryReq _ = logWarn "Slave died. Retrying..." >> runRequestNode'
 
--- | Creates the Backend and runs a Process that is a Slave node
+-- | Creates the 'Backend' and runs a 'Process' that is a slave 'Node'
 joinNetwork :: NetworkConfig -> IO ()
 joinNetwork = mkBackend >=> newLocalNode >=> flip PN.runProcess joinNetwork'
 
--- | Internal for slave node
+-- | Internal for slave 'Node'
 joinNetwork' :: Process ()
 joinNetwork' = do
   me <- getSelfPid
@@ -187,7 +186,7 @@ receiveF rPort = work =<< receiveChan rPort
   where
     work (TransferInProg (path, file)) = do
       liftIO $ do
-        let path' = decode path
+        let path' = decodePath path
         createTree (directory path')
         Filesystem.writeFile path' file
       receiveF rPort

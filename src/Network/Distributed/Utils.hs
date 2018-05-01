@@ -15,6 +15,8 @@ module Network.Distributed.Utils
   , logWarn
   , listDeps
   , getBestPid
+  , encodePath
+  , decodePath
   , timeIt
   , runStackBuild
   , runStackBuildT
@@ -25,9 +27,13 @@ import           Network.Distributed.Types
 
 -------------------------------------------------------------------------------------
 import           Control.Monad.IO.Class    (MonadIO, liftIO)
+import           Data.ByteString           (ByteString)
 import qualified Data.Configurator         as C
 import           Data.List                 (intersect)
-import           Prelude                   hiding (log)
+import           Data.Text.Encoding        (decodeUtf8, encodeUtf8)
+import           Filesystem.Path           (FilePath)
+import           Filesystem.Path.CurrentOS (fromText, toText)
+import           Prelude                   hiding (FilePath, log)
 import           System.Clock
 import           System.Console.ANSI
 import           System.Directory          (getCurrentDirectory)
@@ -87,7 +93,7 @@ getBestPid ::
   -> Deps
   -- ^ Master nodes dependencies
   -> (Maybe Node, Int)
-  -- ^ Current best. Initially set to (Nothing,0)
+  -- ^ Current best. Initially set to @(Nothing,0)@
   -> Maybe Node
 getBestPid [] _ best = fst best
 getBestPid ((curDeps, curPid):xs) cmpDeps curBest
@@ -98,9 +104,24 @@ getBestPid ((curDeps, curPid):xs) cmpDeps curBest
     recurse = getBestPid xs cmpDeps
 
 -------------------------------------------------------------------------------------
+fromEither :: Either a a -> a
+fromEither (Right a) = a
+fromEither (Left a)  = a
+
+-- | Cross-platform encoding of 'FilePath'
+encodePath :: FilePath -> ByteString
+encodePath = encodeUtf8 . fromEither . toText
+
+-- | Cross-platform decoding of 'FilePath'
+decodePath :: ByteString -> FilePath
+decodePath = fromText . decodeUtf8
+
+-------------------------------------------------------------------------------------
+-- | Runs a timed build
 runStackBuildT :: IO ()
 runStackBuildT = timeIt runStackBuild
 
+-- | Runs a build
 runStackBuild :: IO ()
 runStackBuild = do
   log "Build invoked..."

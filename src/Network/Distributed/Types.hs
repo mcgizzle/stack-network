@@ -20,9 +20,7 @@ import           Control.Monad.Reader                               (ReaderT,
                                                                      runReaderT)
 import           Data.Binary                                        (Binary)
 import           Data.ByteString                                    (ByteString)
-import           Data.Text                                          (Text)
 import           Data.Typeable                                      (Typeable)
-import           Filesystem.Path.CurrentOS                          (decode)
 import           GHC.Generics                                       (Generic)
 
 ---------------------------------------------------------------------------------
@@ -33,15 +31,17 @@ data AppConfig = AppConfig
   , backend :: Backend
   }
 
--- | A Monad which wraps Process with ReaderT
-type App a = ReaderT AppConfig Process a
+-- | NetProc Monad
+--
+-- Wraps Process with ReaderT
+type NetProc a = ReaderT AppConfig Process a
 
--- | Runs App
-runApp :: AppConfig -> App a -> Process a
-runApp = flip runReaderT
+-- | Run the 'App' Monad
+runNetProc :: AppConfig -> NetProc a -> Process a
+runNetProc = flip runReaderT
 
 ---------------------------------------------------------------------------------
--- | Host and Port of a Node
+-- | Host and Port of a 'Node'
 data NetworkConfig = NetworkConfig
   { hostNetworkConfig :: String
   , portNetworkConfig :: String
@@ -52,20 +52,20 @@ instance Show NetworkConfig where
     "//" ++ hostNetworkConfig ++ ":" ++ portNetworkConfig
 
 ---------------------------------------------------------------------------------
--- | A Node is used for communication
+-- | A 'Node' is used for communication
 type Node = ProcessId
 
--- | A collection of Nodes
+-- | A collection of 'Node's
 type Network = [Node]
 
--- | The dependecies a Node has, represented as a list of Strings
+-- | The dependecies a 'Node' has, represented as a list of Strings
 type Deps = [String]
 
 -- | A Node and its dependencies
 type ProcessDeps = (Deps, ProcessId)
 
 -- | Tuple of file name and bytes
-type FileInfo = (Text, ByteString)
+type FileInfo = (ByteString, ByteString)
 
 ---------------------------------------------------------------------------------
 -- | All Types used messaging are derived from a Message
@@ -76,16 +76,16 @@ data Message
 -- | Only masters can make a Request
 data Request
   = Ping ProcessId
-  -- ^ Used to transmit masters ProcessId to a slabe
+  -- ^ Used to transmit masters 'ProcessId' to a slave
   | TransferReq (SendPort Transfer)
-  -- ^ FacilitateS a Transfer
+  -- ^ Facilitates a 'Transfer'
   | Terminate
   -- ^ Terminates a slaves connection to the network
   deriving (Generic, Typeable)
 
 instance Binary Request
 
--- | Only slaves can issue a Reponse in reply to a Request
+-- | Only slaves can issue a Reponse in reply to a 'Request'
 data Response
   = PD ProcessDeps
   -- ^ Response to a Ping
@@ -105,11 +105,8 @@ data Transfer
 
 instance Binary Transfer
 
-instance Show Transfer where
-  show (TransferInProg (s, _)) = show $ decode s
-  show _                       = "Transfer Complete"
-
 ---------------------------------------------------------------------------------
+-- | Errors covering a 'Process' failing
 data ProcessError =
   SlaveError
 
