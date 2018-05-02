@@ -36,7 +36,7 @@ data AppConfig = AppConfig
 -- Wraps Process with ReaderT
 type NetProc a = ReaderT AppConfig Process a
 
--- | Run the 'App' Monad
+-- | Run the 'NetProc' Monad
 runNetProc :: AppConfig -> NetProc a -> Process a
 runNetProc = flip runReaderT
 
