@@ -1,6 +1,6 @@
 # stack-network
 
-[![Hackage](https://img.shields.io/hackage/v/lens.svg)](https://hackage.haskell.org/package/stack-network-0.1.0.0)
+[![Hackage](https://img.shields.io/hackage/v/lens.svg)](https://hackage.haskell.org/package/stack-network-0.1.0.1)
 
 ## About
 This is a program I built as part of my Final Year Project in College. The project is titled __An Exploration into the Distribution of Stack__ in which I designed and tested a few approaches for distributing Stack. stack-network uses [Cloud Haskell](https://hackage.haskell.org/package/cloud-haskell) and [pipes](https://hackage.haskell.org/package/pipes) to efficiently transmit files between nodes on a network and thus minimise build times.
